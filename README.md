@@ -7,6 +7,11 @@
 sorts all elements in a YAML file in ascending order
 Now preserving comments and file structure
 
+P.S.
+Switched to a more correct way of working with YAML elements, to working with yaml.Node.
+I have never worked directly with yaml.Node structures before, I always usually converted them to/from "map"
+It turns out there is a better way.
+
 ## For example:
 
 This YAML
