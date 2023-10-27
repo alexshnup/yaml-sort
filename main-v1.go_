@@ -1,0 +1,137 @@
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"sort"
+	"strings"
+
+	"gopkg.in/yaml.v3"
+)
+
+func main() {
+	var content []byte
+	var err error
+
+	// Check if a filename is provided as an argument
+	if len(os.Args) < 2 {
+		// Read from STDIN
+		scanner := bufio.NewScanner(os.Stdin)
+		var sb strings.Builder
+		for scanner.Scan() {
+			sb.WriteString(scanner.Text())
+			sb.WriteString("\n")
+		}
+
+		if scanner.Err() != nil {
+			fmt.Println("Error reading from STDIN:", scanner.Err())
+			return
+		}
+		content = []byte(sb.String())
+	} else {
+		filename := os.Args[1]
+
+		// Read the YAML file
+		content, err = os.ReadFile(filename)
+		if err != nil {
+			fmt.Println("Error reading file:", err)
+			return
+		}
+	}
+
+	// Unmarshal into a generic map
+	var data map[string]interface{}
+	err = yaml.Unmarshal(content, &data)
+	if err != nil {
+		fmt.Println("Error unmarshaling YAML:", err)
+		return
+	}
+
+	// Splitting into two groups: simple key-values and nested structures
+	simple := make(map[string]interface{})
+	nested := make(map[string]interface{})
+
+	for k, v := range data {
+		// fmt.Printf(" type of %s is %T\n", k, v)
+		switch v.(type) {
+		case map[string]interface{}:
+			nested[k] = v
+		case map[interface{}]interface{}:
+			nested[k] = v
+		default:
+			simple[k] = v
+		}
+	}
+
+	// fmt.Printf("LEN simple=%d\n", len(simple))
+	// fmt.Printf("LEN nested=%d\n", len(nested))
+
+	// Sorting the keys for each group
+	sortedSimple := sortAndCollect(simple)
+	sortedNested := sortAndCollect(nested)
+
+	// Combining the sorted maps into one
+	finalSortedSimple := make(map[string]interface{})
+	finalSortedNested := make(map[string]interface{})
+	for k, v := range sortedSimple {
+		finalSortedSimple[k] = v
+		// fmt.Printf("========%s: %v\n", k, v)
+	}
+	for k, v := range sortedNested {
+		finalSortedNested[k] = v
+	}
+
+	// Marshal Simple back into YAML
+	sortedSimpleContent, err := yaml.Marshal(finalSortedSimple)
+	if err != nil {
+		fmt.Println("Error marshaling sorted data:", err)
+		return
+	}
+
+	// Marshal Nested back into YAML
+	sortedNestedContent, err := yaml.Marshal(finalSortedNested)
+	if err != nil {
+		fmt.Println("Error marshaling sorted data:", err)
+		return
+	}
+
+	var finalSortedContent []byte
+	finalSortedContent = append(finalSortedContent, sortedSimpleContent...)
+	//Insert empty line between simple and nested
+	finalSortedContent = append(finalSortedContent, []byte("\n")...)
+	finalSortedContent = append(finalSortedContent, sortedNestedContent...)
+
+	if len(os.Args) < 2 {
+		// Print sorted content to STDOUT
+		fmt.Print(string(finalSortedContent))
+	} else {
+		filename := os.Args[1]
+		// Write the sorted content back to the file
+
+		WriteToFile(filename, finalSortedContent)
+		// WriteToFile(filename, sortedNestedContent)
+		fmt.Println("YAML content sorted successfully!")
+	}
+}
+
+func sortAndCollect(data map[string]interface{}) map[string]interface{} {
+	sorted := make(map[string]interface{})
+	keys := make([]string, 0, len(data))
+	for k := range data {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		sorted[k] = data[k]
+	}
+	return sorted
+}
+
+func WriteToFile(filename string, content []byte) {
+	err := os.WriteFile(filename, content, 0644)
+	if err != nil {
+		fmt.Println("Error writing sorted content to file:", err)
+		return
+	}
+}
