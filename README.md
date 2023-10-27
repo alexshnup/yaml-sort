@@ -2,6 +2,8 @@
 
 ### yaml-sorter
 
+[![Go](https://github.com/alexshnup/yaml-sort/actions/workflows/go.yml/badge.svg)](https://github.com/alexshnup/yaml-sort/actions/workflows/go.yml)
+
 ## Utility for sorting the contents of a YAML file
 
 sorts all elements in a YAML file in ascending order
