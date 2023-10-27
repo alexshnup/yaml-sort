@@ -67,9 +67,11 @@ docker build -t yaml-sorter .
 
 ### Using in Docker:
 
-Just output to stdout
+Just innput to stdin, and output to stdout
 ```bash
 docker run -i --rm  yaml-sorter < input.yml 
+#or
+docker run -i --rm  yaml-sorter < input.yml > out.yml
 ```
 or edit file in place
 ```bash
